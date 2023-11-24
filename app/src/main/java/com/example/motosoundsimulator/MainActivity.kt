@@ -1,52 +1,68 @@
+
 package com.example.motosoundsimulator
 
-import androidx.appcompat.app.AppCompatActivity
+import android.media.MediaPlayer
 import android.os.Bundle
-import android.util.Log
-import android.widget.Toast
-import com.example.motosoundsimulator.Player.CustomMediaPlayer
+import android.widget.SeekBar
+import androidx.appcompat.app.AppCompatActivity
 
 class MainActivity : AppCompatActivity() {
-    private lateinit var customMediaPlayer: CustomMediaPlayer
+
+    private lateinit var mediaPlayer: MediaPlayer
+    private lateinit var seekBar: SeekBar
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        // Crear una instancia de CustomMediaPlayer
+
+        // Inicializa el MediaPlayer con el archivo de sodo inicial
+        mediaPlayer = MediaPlayer.create(this, R.raw.moto)
+
+        // Inicializa el SeekBar
+        seekBar = findViewById(R.id.seekBar)
+        seekBar.max = 100
+        seekBar.progress = 0
+
+        // Configura el OnSeekBarChangeListener
+        seekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
+                // Cambia el archivo de sonido según el rango del progreso
+                changeSound(R.raw.moto, progress)
+            }
+
+            override fun onStartTrackingTouch(seekBar: SeekBar) {
+                // Pausa la reproducción cuando se toca el SeekBar
+                mediaPlayer.pause()
+            }
+
+            override fun onStopTrackingTouch(seekBar: SeekBar) {
+                // Reanuda la reproducción cuando se suelta el SeekBar
+                mediaPlayer.start()
+            }
+        })
     }
 
-    override fun onResume() {
-        super.onResume()
-        init()
-    }
-    fun init(){
-        val resourceName = "moto_sound" // Reemplaza 'tu_archivo_wav' con el nombre real de tu archivo WAV
-        val resourceId = resources.getIdentifier(resourceName, "raw", packageName)
+    private fun changeSound(soundResource: Int,position : Int) {
+        // Cambia el archivo de sonido y reinicia la reproducción
+        mediaPlayer.release()
 
-        if (resourceId != 0) {
-            // Crear una instancia de CustomMediaPlayer
-            customMediaPlayer = CustomMediaPlayer(this)
-
-            Log.e("reproductor", "android.resource://${packageName}/${R.raw.moto_sound}")
-            // Construir la ruta del archivo WAV utilizando la notación 'android.resource'
-            val audioFilePath = "android.resource://${packageName}/${R.raw.moto_sound}"
-
-            // Reproducir una sección específica
-            val startPositionMs = 1000 // posición de inicio en milisegundos
-            val endPositionMs = 5000   // posición de fin en milisegundos
-            customMediaPlayer.playSection(R.raw.moto_sound, startPositionMs, endPositionMs)
-        } else {
-            // Manejar caso en el que el archivo no existe
-            Toast.makeText(this, "Archivo WAV no encontrado", Toast.LENGTH_SHORT).show()
-        }
+        mediaPlayer = MediaPlayer.create(this, soundResource)
+        mediaPlayer.seekTo(calcularDuracion(position))
+        mediaPlayer.start()
     }
-    fun isRawResourceExist(resourceName: String): Boolean {
-        val resourceId = resources.getIdentifier(resourceName, "raw", packageName)
-        return resourceId != 0
+    fun calcularDuracion(position : Int) : Int {
+        var result = 0
+        val duration = mediaPlayer.duration
+        println("Duración total del audio: $duration ms")
+        result = duration / 100 * position
+        println("Duración total del audio result: $result ms")
+
+        return result
     }
+
     override fun onDestroy() {
-        // Liberar recursos al destruir la actividad
-        customMediaPlayer.release()
         super.onDestroy()
+        // Libera los recursos del MediaPlayer
+        mediaPlayer.release()
     }
 }

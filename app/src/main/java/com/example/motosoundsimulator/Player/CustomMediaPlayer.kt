@@ -1,21 +1,18 @@
-package com.example.motosoundsimulator.Player
-
 import android.content.Context
 import android.media.AudioAttributes
 import android.media.AudioManager
 import android.media.MediaPlayer
+import android.net.Uri
 import android.os.Build
-import android.os.Handler
+import java.io.IOException
 
 class CustomMediaPlayer(private val context: Context) {
 
     private var mediaPlayer: MediaPlayer? = null
 
     init {
-        // Inicializar el MediaPlayer
         mediaPlayer = MediaPlayer()
 
-        // Configurar atributos de audio para Android 21 y versiones posteriores
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             val audioAttributes = AudioAttributes.Builder()
                 .setUsage(AudioAttributes.USAGE_MEDIA)
@@ -28,32 +25,51 @@ class CustomMediaPlayer(private val context: Context) {
         }
     }
 
-    fun playSection(resourceId: Int, startPositionMs: Int, endPositionMs: Int) {
+    fun playWavConVariableFlotante(variableFlotante: Float, resourceId: Int) {
         try {
-            // Cargar el archivo desde el recurso de Android
-            mediaPlayer = MediaPlayer.create(context, resourceId)
+            val progreso = (variableFlotante * getDuration()).toInt()
 
-            // Reproducir una sección específica
-            mediaPlayer?.seekTo(startPositionMs)
-            mediaPlayer?.start()
+            setupMediaPlayer(resourceId)
 
-            // Detener la reproducción después de la duración de la sección
-            stopAfterDuration(endPositionMs - startPositionMs)
-        } catch (e: Exception) {
+            mediaPlayer?.setOnPreparedListener {
+                mediaPlayer?.seekTo(progreso)
+                mediaPlayer?.start()
+            }
+
+            mediaPlayer?.prepareAsync()
+        } catch (e: IOException) {
             e.printStackTrace()
-            // Manejar la excepción
+        } catch (e: IllegalStateException) {
+            e.printStackTrace()
         }
     }
 
-    private fun stopAfterDuration(duration: Int) {
-        val stopHandler = Handler()
-        stopHandler.postDelayed({
-            mediaPlayer?.stop()
-            mediaPlayer?.reset()
-        }, duration.toLong())
+    fun seekTo(position: Int) {
+        mediaPlayer?.seekTo(position)
+    }
+
+    fun getDuration(): Int {
+        return mediaPlayer?.duration ?: 0
     }
 
     fun release() {
         mediaPlayer?.release()
+    }
+
+    private fun setupMediaPlayer(resourceId: Int) {
+        try {
+            val packageName = context.resources.getResourcePackageName(resourceId)
+            val typeName = context.resources.getResourceTypeName(resourceId)
+            val entryName = context.resources.getResourceEntryName(resourceId)
+
+            val resName = if (typeName == "raw") entryName else "raw/$entryName"
+            val identifier = context.resources.getIdentifier(resName, typeName, packageName)
+
+            mediaPlayer?.setDataSource(context, Uri.parse("android.resource://$packageName/$identifier"))
+        } catch (e: IOException) {
+            e.printStackTrace()
+        } catch (e: IllegalStateException) {
+            e.printStackTrace()
+        }
     }
 }

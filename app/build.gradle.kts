@@ -7,6 +7,7 @@ android {
     namespace = "com.example.motosoundsimulator"
     compileSdk = 34
 
+
     defaultConfig {
         applicationId = "com.example.motosoundsimulator"
         minSdk = 24
