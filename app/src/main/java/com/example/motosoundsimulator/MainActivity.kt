@@ -1,80 +1,65 @@
 
 package com.example.motosoundsimulator
 
-import android.media.MediaPlayer
+import android.media.SoundPool
 import android.os.Bundle
-import android.os.ConditionVariable
 import android.os.Handler
-import android.util.Log
+import android.os.Looper
 import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
-import kotlinx.coroutines.delay
+import kotlin.concurrent.thread
 
-class MainActivity : AppCompatActivity() {
-
-    private lateinit var mediaPlayer: MediaPlayer
-    private var variable = 0
+class MainActivity : AppCompatActivity(), SoundPool.OnLoadCompleteListener  {
     private lateinit var textViewResultado: Button
-    private val vueltas = 18
-    val handler = Handler()
+    var listIdSound : ArrayList<Int> = arrayListOf()
+    var mSoundPool: SoundPool? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
         textViewResultado = findViewById(R.id.btn_contar)
-        mediaPlayer = MediaPlayer.create(this, R.raw.moto)
+        initSoundPool()
 
-
-
+        listIdSound.add(mSoundPool?.load(this, R.raw.moto_1, 1)!!)
+        listIdSound.add(mSoundPool?.load(this, R.raw.moto_2, 1)!!)
+        listIdSound.add(mSoundPool?.load(this, R.raw.moto_3, 1)!!)
+        listIdSound.add(mSoundPool?.load(this, R.raw.moto_4, 1)!!)
+        listIdSound.add(mSoundPool?.load(this, R.raw.moto_5, 1)!!)
+        listIdSound.add(mSoundPool?.load(this, R.raw.moto_6, 1)!!)
+        listIdSound.add(mSoundPool?.load(this, R.raw.moto_7, 1)!!)
+        listIdSound.add(mSoundPool?.load(this, R.raw.moto_8, 1)!!)
+        listIdSound.add(mSoundPool?.load(this, R.raw.moto_9, 1)!!)
+        listIdSound.add(mSoundPool?.load(this, R.raw.moto_10, 1)!!)
 
         textViewResultado.setOnClickListener {
-            variable = 0
-            for (i in 0..vueltas) {
-                val delay = (i * (mediaPlayer.duration / vueltas))
-               // Log.e("NestorOP","vuelta ${i}")
-                incrementarVariableHasta100(delay)
 
+
+            thread {
+                listIdSound.forEach {it->
+                    mSoundPool!!.play(it!!, 1f, 1f, 1, 0, 1f);
+                    Thread.sleep(516)
+                }
+
+                // Si necesitas actualizar la interfaz de usuario, puedes usar un Handler
+                val handler = Handler(Looper.getMainLooper())
+                handler.post {
+                    // Actualiza la interfaz de usuario aquí
+                }
             }
         }
     }
 
-    fun calcularDuracion(position : Int) : Int {
-        var result = 0
-        val duration = mediaPlayer.duration
-        Log.e("NestorOP","duration: $duration ms")
-        result = duration / vueltas * position
-        Log.e("NestorOP","result: $result ms")
-
-        return result + 1
-    }
-    override fun onDestroy() {
-        super.onDestroy()
-        mediaPlayer.release()
+    override fun onLoadComplete(p0: SoundPool?, p1: Int, p2: Int) {
+        TODO("Not yet implemented")
     }
 
-    private fun changeSound() {
-        if (!mediaPlayer.isPlaying)     {
-            mediaPlayer.start()
-        }
+    fun initSoundPool(){
+        val spb = SoundPool.Builder()
+        spb.setMaxStreams(5)
+        mSoundPool = spb.build()
     }
-
-    private fun incrementarVariableHasta100(variable: Int) {
-
-        try {
-            mediaPlayer = MediaPlayer.create(this, R.raw.moto)
-            Log.e("NestorOP","duration: $variable ms")
-            mediaPlayer.seekTo(variable)
-            mediaPlayer.start()
-            Thread.sleep((mediaPlayer.duration/vueltas).toLong())
-            mediaPlayer.stop()
-        } catch (ex: InterruptedException) {
-            // Manejar la excepción
-            ex.printStackTrace()
-        }
-
-
-       // changeSound()
+    fun freeSound(){
     }
 
 }
