@@ -8,13 +8,14 @@ import android.os.Handler
 import android.util.Log
 import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
+import kotlinx.coroutines.delay
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var mediaPlayer: MediaPlayer
     private var variable = 0
     private lateinit var textViewResultado: Button
-    private val vueltas = 10
+    private val vueltas = 18
     val handler = Handler()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -29,16 +30,12 @@ class MainActivity : AppCompatActivity() {
 
         textViewResultado.setOnClickListener {
             variable = 0
-            handler.postDelayed({
-                for (i in 0..vueltas) {
+            for (i in 0..vueltas) {
+                val delay = (i * (mediaPlayer.duration / vueltas))
+               // Log.e("NestorOP","vuelta ${i}")
+                incrementarVariableHasta100(delay)
 
-                    // Ajusta el retraso según tus necesidades, aquí se usa una fracción del tiempo total
-                    val delay = (i * (mediaPlayer.duration / vueltas)) + 1
-                    handler.postDelayed({
-                        incrementarVariableHasta100(i)
-                    }, delay.toLong())
-                }
-            }, 0)
+            }
         }
     }
 
@@ -63,8 +60,21 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun incrementarVariableHasta100(variable: Int) {
-        mediaPlayer.seekTo(calcularDuracion(variable))
-        changeSound()
+
+        try {
+            mediaPlayer = MediaPlayer.create(this, R.raw.moto)
+            Log.e("NestorOP","duration: $variable ms")
+            mediaPlayer.seekTo(variable)
+            mediaPlayer.start()
+            Thread.sleep((mediaPlayer.duration/vueltas).toLong())
+            mediaPlayer.stop()
+        } catch (ex: InterruptedException) {
+            // Manejar la excepción
+            ex.printStackTrace()
+        }
+
+
+       // changeSound()
     }
 
 }
