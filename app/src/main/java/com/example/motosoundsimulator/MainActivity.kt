@@ -1,26 +1,21 @@
 
 package com.example.motosoundsimulator
 
-import android.content.Context
-import android.hardware.Sensor
-import android.hardware.SensorEvent
-import android.hardware.SensorEventListener
-import android.hardware.SensorManager
 import android.media.MediaPlayer
 import android.os.Bundle
+import android.os.ConditionVariable
 import android.os.Handler
 import android.util.Log
 import android.widget.Button
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import java.text.DecimalFormat
 
-class MainActivity : AppCompatActivity(){
+class MainActivity : AppCompatActivity() {
 
     private lateinit var mediaPlayer: MediaPlayer
     private var variable = 0
     private lateinit var textViewResultado: Button
     private val vueltas = 10
+    val handler = Handler()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -30,27 +25,31 @@ class MainActivity : AppCompatActivity(){
         mediaPlayer = MediaPlayer.create(this, R.raw.moto)
 
 
+
+
         textViewResultado.setOnClickListener {
-            Handler().postDelayed({
-                variable = 0
-                incrementarVariableHasta100()
+            variable = 0
+            handler.postDelayed({
+                for (i in 0..vueltas) {
+
+                    // Ajusta el retraso según tus necesidades, aquí se usa una fracción del tiempo total
+                    val delay = (i * (mediaPlayer.duration / vueltas)) + 1
+                    handler.postDelayed({
+                        incrementarVariableHasta100(i)
+                    }, delay.toLong())
+                }
             }, 0)
         }
-
-    }
-
-    override fun onResume() {
-        super.onResume()
     }
 
     fun calcularDuracion(position : Int) : Int {
         var result = 0
         val duration = mediaPlayer.duration
-        println("Duración total del audio: $duration ms")
+        Log.e("NestorOP","duration: $duration ms")
         result = duration / vueltas * position
-        println("Duración total del audio result: $result ms")
+        Log.e("NestorOP","result: $result ms")
 
-        return result
+        return result + 1
     }
     override fun onDestroy() {
         super.onDestroy()
@@ -63,21 +62,9 @@ class MainActivity : AppCompatActivity(){
         }
     }
 
-    private fun incrementarVariableHasta100() {
-        val handler = Handler()
-        val incremento = 1
-        handler.post(object : Runnable {
-            override fun run() {
-
-                if (variable < vueltas) {
-                    variable += incremento
-
-                    mediaPlayer.seekTo(calcularDuracion(variable))
-                    changeSound()
-
-                    handler.postDelayed(this, (mediaPlayer.duration / vueltas).toLong())
-                }
-            }
-        })
+    private fun incrementarVariableHasta100(variable: Int) {
+        mediaPlayer.seekTo(calcularDuracion(variable))
+        changeSound()
     }
+
 }
