@@ -18,14 +18,18 @@ class MotoView(context: Context) : View(context) {
     private val MAX_FINGERS = 10
     private var touchStartTime: Long = 0
     private var touchDuration: Long = 0
-    private var touchedAcelerador: MotoModel? = null
+    private var isTouchingAcelerador = false
+    private var aceleradorRotationTimer: Timer? = null
+    private var isOscillating = false
+    private var oscillationDirection = 1
 
+    // Rango -180  --- 80
     init {
         // Carga las imágenes desde recursos y establece las escalas y posiciones 37
-        motoModels.add(MotoModel("Acelerador", R.raw.moto_4, loadBitmap(R.drawable.tablero_moto),
+        motoModels.add(MotoModel("Tablero", R.raw.moto_4, loadBitmap(R.drawable.tablero_moto),
            0.7f, setXPosPercentage(50f),setYPosPercentage(66f),0f,0f,0f))
         motoModels.add(MotoModel("Abuja", R.raw.moto_4, loadBitmap(R.drawable.abuja_roja),
-            0.4f, setXPosPercentage(44f),setYPosPercentage(78f),180f,0f,0f))
+            0.4f, setXPosPercentage(44f),setYPosPercentage(78f),-180f,0f,0f))
         motoModels.add(MotoModel("Acelerador", R.raw.moto_4, loadBitmap(R.drawable.acelerador),
             0.4f, setXPosPercentage(90f),setYPosPercentage(50f),0f,0f,0f))
 
@@ -91,27 +95,27 @@ class MotoView(context: Context) : View(context) {
             val touchX = event.getX(i)
             val touchY = event.getY(i)
 
-            // ... Resto del código ...
-
             for (drum in motoModels) {
                 if (isTouchInsideDrum(touchX, touchY, drum)) {
                     touchStartTime = System.currentTimeMillis()
                     touchDuration = 0
 
                     println("Tocaste el tambor ${drum.id}")
-                    //UtilPlayer.playWav(context, drum.midiResourceId)
+
                     if (drum.id == "Acelerador") {
+                        isTouchingAcelerador = true
                         val abujaModel = motoModels.find { it.id == "Abuja" }
 
-                        // Rotar la aguja
-                        abujaModel?.let {  startAceleradorRotationTimer(it) }
-
-
+                        // Iniciar el temporizador solo si no hay uno en curso
+                        if (aceleradorRotationTimer == null) {
+                            abujaModel?.let { startAceleradorRotationTimer(it) }
+                        }
                     }
                 }
             }
         }
     }
+
     private fun isTouchInsideDrum(touchX: Float, touchY: Float, drum: MotoModel): Boolean {
         val scaledWidth = drum.bitmap.width * drum.scale
         val scaledHeight = drum.bitmap.height * drum.scale
@@ -136,25 +140,59 @@ class MotoView(context: Context) : View(context) {
     private fun handleTouchUp(event: MotionEvent) {
         touchDuration = System.currentTimeMillis() - touchStartTime
         println("Duración del toque: $touchDuration milisegundos")
-    }
-    private fun rotateAbuja(abujaModel: MotoModel) {
-        abujaModel.pivotX = (abujaModel.bitmap.width * abujaModel.scale / 2f)
-        abujaModel.pivotY = ((abujaModel.bitmap.height) * abujaModel.scale / 2f)
-        abujaModel.rotationDegrees += 10f
-        invalidate()
-    }
-    private fun startAceleradorRotationTimer(motoModel: MotoModel) {
-        val timer = Timer()
-        timer.scheduleAtFixedRate(object : TimerTask() {
-            override fun run() {
-                rotateAcelerador(motoModel)
-            }
-        }, 0, 100) // El segundo argumento es el tiempo de espera entre cada ejecución en milisegundos
-    }
-    private fun rotateAcelerador(aceleradorModel: MotoModel) {
-        aceleradorModel.rotationDegrees += 10f
+
+        isTouchingAcelerador = false
+
         postInvalidate()
     }
 
 
+    private fun startAceleradorRotationTimer(motoModel: MotoModel) {
+        // Detener y limpiar el temporizador anterior, si existe
+        aceleradorRotationTimer?.cancel()
+        aceleradorRotationTimer?.purge()
+
+        aceleradorRotationTimer = Timer()
+        aceleradorRotationTimer?.scheduleAtFixedRate(object : TimerTask() {
+            override fun run() {
+                rotateAcelerador(motoModel)
+            }
+        }, 0, 50) // El segundo argumento es el tiempo de espera entre cada ejecución en milisegundos
+    }
+
+    private fun stopAceleradorRotationTimer() {
+        aceleradorRotationTimer?.cancel()
+        aceleradorRotationTimer?.purge()
+        aceleradorRotationTimer = null
+    }
+
+    private fun rotateAcelerador(aceleradorModel: MotoModel) {
+        if (isTouchingAcelerador) {
+            // Incrementar la rotación dentro del límite
+            if (aceleradorModel.rotationDegrees < 80f) {
+                aceleradorModel.rotationDegrees += 10f
+            } else if (aceleradorModel.rotationDegrees >= 80f) {
+                isOscillating = true
+            }
+
+            // Si está oscilando, continuar la oscilación entre 75 y 80
+            if (isOscillating) {
+                aceleradorModel.rotationDegrees += 5 * oscillationDirection
+
+                // Invertir la dirección si alcanza los límites
+                if (aceleradorModel.rotationDegrees >= 80f || aceleradorModel.rotationDegrees <= 75f) {
+                    oscillationDirection *= -1
+                }
+            }
+        } else {
+            // Si se soltó el acelerador, dejar de oscilar y comenzar a decrementar
+            isOscillating = false
+            aceleradorModel.rotationDegrees -= 10f
+            if (aceleradorModel.rotationDegrees < -180f) {
+                aceleradorModel.rotationDegrees = -180f
+            }
+        }
+
+        postInvalidate()
+    }
 }
