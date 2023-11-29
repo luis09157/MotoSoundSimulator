@@ -9,6 +9,8 @@ import android.view.MotionEvent
 import android.view.View
 import com.example.motosoundsimulator.Model.MotoModel
 import com.example.motosoundsimulator.R
+import java.util.Timer
+import java.util.TimerTask
 
 class MotoView(context: Context) : View(context) {
 
@@ -16,15 +18,18 @@ class MotoView(context: Context) : View(context) {
     private val MAX_FINGERS = 10
     private var touchStartTime: Long = 0
     private var touchDuration: Long = 0
+    private var touchedAcelerador: MotoModel? = null
 
     init {
         // Carga las imágenes desde recursos y establece las escalas y posiciones 37
         motoModels.add(MotoModel("Acelerador", R.raw.moto_4, loadBitmap(R.drawable.tablero_moto),
            0.7f, setXPosPercentage(50f),setYPosPercentage(66f),0f,0f,0f))
-        motoModels.add(MotoModel("Abuja", R.raw.moto_4, loadBitmap(R.drawable.abuja_con_fondo),
-            0.2f, setXPosPercentage(37f),setYPosPercentage(58f),0f,0f,0f))
+        motoModels.add(MotoModel("Abuja", R.raw.moto_4, loadBitmap(R.drawable.abuja_roja),
+            0.4f, setXPosPercentage(44f),setYPosPercentage(78f),180f,0f,0f))
+        motoModels.add(MotoModel("Acelerador", R.raw.moto_4, loadBitmap(R.drawable.acelerador),
+            0.4f, setXPosPercentage(90f),setYPosPercentage(50f),0f,0f,0f))
 
-        // Agrega más imágenes, escalas y posiciones según sea necesario
+
         setOnTouchListener { _, event ->
             when (event.actionMasked) {
                 MotionEvent.ACTION_DOWN -> handleMultiTouchDown(event)
@@ -95,8 +100,13 @@ class MotoView(context: Context) : View(context) {
 
                     println("Tocaste el tambor ${drum.id}")
                     //UtilPlayer.playWav(context, drum.midiResourceId)
-                    if (drum.id == "Abuja") {
-                         rotateAbuja(drum, touchX, touchY)
+                    if (drum.id == "Acelerador") {
+                        val abujaModel = motoModels.find { it.id == "Abuja" }
+
+                        // Rotar la aguja
+                        abujaModel?.let {  startAceleradorRotationTimer(it) }
+
+
                     }
                 }
             }
@@ -127,19 +137,23 @@ class MotoView(context: Context) : View(context) {
         touchDuration = System.currentTimeMillis() - touchStartTime
         println("Duración del toque: $touchDuration milisegundos")
     }
-    private fun rotateAbuja(abujaModel: MotoModel, touchX: Float, touchY: Float) {
-        // Calcula el punto de pivote en el centro del bitmap
-        val pivotX = abujaModel.xPosition + (abujaModel.bitmap.width * abujaModel.scale / 2f)
-        val pivotY = abujaModel.yPosition + (abujaModel.bitmap.height * abujaModel.scale / 2f)
-
-        // Ajusta el punto de pivote en el modelo
+    private fun rotateAbuja(abujaModel: MotoModel) {
         abujaModel.pivotX = (abujaModel.bitmap.width * abujaModel.scale / 2f)
-        abujaModel.pivotY = (abujaModel.bitmap.height * abujaModel.scale / 2f)
-        // Ajusta la rotación de la "Abuja" sin cambiar las coordenadas
-        abujaModel.rotationDegrees += 20f
-
-        // Solicita un redibujo de la vista para reflejar la rotación
+        abujaModel.pivotY = ((abujaModel.bitmap.height) * abujaModel.scale / 2f)
+        abujaModel.rotationDegrees += 10f
         invalidate()
+    }
+    private fun startAceleradorRotationTimer(motoModel: MotoModel) {
+        val timer = Timer()
+        timer.scheduleAtFixedRate(object : TimerTask() {
+            override fun run() {
+                rotateAcelerador(motoModel)
+            }
+        }, 0, 100) // El segundo argumento es el tiempo de espera entre cada ejecución en milisegundos
+    }
+    private fun rotateAcelerador(aceleradorModel: MotoModel) {
+        aceleradorModel.rotationDegrees += 10f
+        postInvalidate()
     }
 
 
