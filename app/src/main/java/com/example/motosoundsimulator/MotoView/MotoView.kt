@@ -5,14 +5,18 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Matrix
+import android.media.SoundPool
+import android.os.Handler
+import android.os.Looper
 import android.view.MotionEvent
 import android.view.View
 import com.example.motosoundsimulator.Model.MotoModel
 import com.example.motosoundsimulator.R
 import java.util.Timer
 import java.util.TimerTask
+import kotlin.concurrent.thread
 
-class MotoView(context: Context) : View(context) {
+class MotoView(context: Context) : View(context), SoundPool.OnLoadCompleteListener{
 
     private val motoModels = mutableListOf<MotoModel>()
     private val MAX_FINGERS = 10
@@ -23,8 +27,12 @@ class MotoView(context: Context) : View(context) {
     private var isOscillating = false
     private var oscillationDirection = 1
 
+    var listIdSound : ArrayList<Int> = arrayListOf()
+    var mSoundPool: SoundPool? = null
+
     // Rango -180  --- 80
     init {
+        initSoundPool()
         // Carga las imágenes desde recursos y establece las escalas y posiciones 37
         motoModels.add(MotoModel("Tablero", R.raw.moto_4, loadBitmap(R.drawable.tablero_moto),
            0.7f, setXPosPercentage(50f),setYPosPercentage(66f),0f,0f,0f))
@@ -194,5 +202,40 @@ class MotoView(context: Context) : View(context) {
         }
 
         postInvalidate()
+    }
+
+    override fun onLoadComplete(p0: SoundPool?, p1: Int, p2: Int) {
+        TODO("Not yet implemented")
+    }
+    fun playSound(){
+        thread {
+            listIdSound.forEach {it->
+                mSoundPool!!.play(it!!, 1f, 1f, 1, 0, 1f);
+                Thread.sleep(516)
+            }
+
+            // Si necesitas actualizar la interfaz de usuario, puedes usar un Handler
+            val handler = Handler(Looper.getMainLooper())
+            handler.post {
+                // Actualiza la interfaz de usuario aquí
+            }
+        }
+    }
+    fun initSoundPool(){
+        val spb = SoundPool.Builder()
+        spb.setMaxStreams(5)
+        mSoundPool = spb.build()
+
+
+        listIdSound.add(mSoundPool?.load(context, R.raw.moto_1, 1)!!)
+        listIdSound.add(mSoundPool?.load(context, R.raw.moto_2, 1)!!)
+        listIdSound.add(mSoundPool?.load(context, R.raw.moto_3, 1)!!)
+        listIdSound.add(mSoundPool?.load(context, R.raw.moto_4, 1)!!)
+        listIdSound.add(mSoundPool?.load(context, R.raw.moto_5, 1)!!)
+        listIdSound.add(mSoundPool?.load(context, R.raw.moto_6, 1)!!)
+        listIdSound.add(mSoundPool?.load(context, R.raw.moto_7, 1)!!)
+        listIdSound.add(mSoundPool?.load(context, R.raw.moto_8, 1)!!)
+        listIdSound.add(mSoundPool?.load(context, R.raw.moto_9, 1)!!)
+        listIdSound.add(mSoundPool?.load(context, R.raw.moto_10, 1)!!)
     }
 }
